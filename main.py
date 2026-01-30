@@ -1,64 +1,72 @@
 import time
 import smtplib
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 
 # ===============================
-# CONFIGURAÇÕES DE EMAIL
+# EMAIL SETTINGS
 # ===============================
-EMAIL_REMETENTE = "vilsonjosepereirapinto@gmail.com"
-EMAIL_DESTINO = "vilsonpinto@escola.pr.gov.br"
+EMAIL_SENDER = "vilsonjosepereirapinto@gmail.com"
+EMAIL_RECEIVER = "vilsonjosepereirapinto@gmail.com"
 
-# ⚠️ USE APENAS SENHA DE APP DO GMAIL (16 caracteres, sem espaços)
-SENHA_APP = "COLE_AQUI_SUA_SENHA_DE_APP"
-
-# ===============================
-# AGUARDA 5 MINUTOS
-# ===============================
-print("⏳ Teste iniciado. Aguardando 5 minutos para envio do e-mail...")
-time.sleep(300)  # 300 segundos = 5 minutos
+# Gmail APP PASSWORD (16 characters)
+APP_PASSWORD = "PASTE_YOUR_APP_PASSWORD_HERE"
 
 # ===============================
-# CONTEÚDO DO RELATÓRIO (TESTE)
+# BRAZIL TIMEZONE (BRT = UTC-3)
 # ===============================
-agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+BRT = timezone(timedelta(hours=-3))
 
-mensagem = f"""
-RELATÓRIO DE TESTE – PORTFOLIO WATCHER
+now_brt = datetime.now(BRT)
 
-Horário de envio: {agora}
+target_time = now_brt.replace(
+    hour=13,
+    minute=25,
+    second=0,
+    microsecond=0
+)
 
-Este é um EMAIL DE TESTE.
-Se você recebeu esta mensagem, o envio automático está FUNCIONANDO corretamente.
+# If current time already passed 13:25, send immediately
+if target_time > now_brt:
+    wait_seconds = (target_time - now_brt).total_seconds()
+    print(f"Waiting until 13:25 BRT ({int(wait_seconds)} seconds)...")
+    time.sleep(wait_seconds)
+else:
+    print("Target time already passed. Sending immediately.")
 
-Próximo passo:
-✔️ Substituir este texto pelo relatório real
-✔️ Agendar envio diário automático
+# ===============================
+# EMAIL CONTENT
+# ===============================
+send_time = datetime.now(BRT).strftime("%d/%m/%Y %H:%M:%S")
+
+body = f"""
+TEST REPORT – PORTFOLIO WATCHER
+
+Scheduled time: 13:25 BRT
+Actual send time: {send_time}
+
+If you received this email, automatic delivery is WORKING.
 """
 
-# ===============================
-# MONTAGEM DO EMAIL
-# ===============================
 msg = MIMEMultipart()
-msg["From"] = EMAIL_REMETENTE
-msg["To"] = EMAIL_DESTINO
-msg["Subject"] = "📊 TESTE – Relatório automático (5 minutos)"
+msg["From"] = EMAIL_SENDER
+msg["To"] = EMAIL_RECEIVER
+msg["Subject"] = "TEST – Scheduled Email 13:25 BRT"
 
-msg.attach(MIMEText(mensagem, "plain"))
+msg.attach(MIMEText(body, "plain"))
 
 # ===============================
-# ENVIO DO EMAIL
+# SEND EMAIL
 # ===============================
 try:
-    servidor = smtplib.SMTP("smtp.gmail.com", 587)
-    servidor.starttls()
-    servidor.login(EMAIL_REMETENTE, SENHA_APP)
-    servidor.send_message(msg)
-    servidor.quit()
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(EMAIL_SENDER, APP_PASSWORD)
+    server.send_message(msg)
+    server.quit()
+    print("Email sent successfully.")
 
-    print("✅ Email enviado com sucesso!")
-
-except Exception as erro:
-    print("❌ ERRO AO ENVIAR EMAIL")
-    print(erro)
+except Exception as error:
+    print("ERROR sending email:")
+    print(error)
