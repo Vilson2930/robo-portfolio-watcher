@@ -1,56 +1,64 @@
 import os
 import smtplib
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# ==================================================
+# =========================================================
 # FUSO HORÁRIO BRASIL (BRT = UTC-3)
-# ==================================================
+# =========================================================
 BRT = timezone(timedelta(hours=-3))
 agora = datetime.now(BRT)
 
-# ==================================================
-# DADOS DO E-MAIL (VINDOS DOS SECRETS DO GITHUB)
-# ==================================================
+# =========================================================
+# DADOS DE E-MAIL (VINDOS DOS SECRETS DO GITHUB)
+# =========================================================
 EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_TO = os.getenv("EMAIL_TO")
 EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
+EMAIL_TO = os.getenv("EMAIL_TO")
 
-if not EMAIL_USER or not EMAIL_TO or not EMAIL_APP_PASSWORD:
-    raise RuntimeError("Segredos de e-mail não configurados corretamente")
+if not EMAIL_USER or not EMAIL_APP_PASSWORD or not EMAIL_TO:
+    raise ValueError("Secrets de e-mail não configurados corretamente.")
 
-# ==================================================
-# CONTEÚDO DO RELATÓRIO
-# ==================================================
-assunto = f"Relatório Diário - {agora.strftime('%d/%m/%Y')}"
+# =========================================================
+# CONTEÚDO DO E-MAIL
+# =========================================================
+assunto = "Relatório Diário do Robô de Portfólio"
+
 corpo = f"""
-Relatório diário gerado automaticamente.
+Relatório Diário – Robô de Portfólio
 
-Data e hora (Brasil):
-{agora.strftime('%d/%m/%Y %H:%M')}
+Data/Hora (Brasil): {agora.strftime('%d/%m/%Y %H:%M')}
 
 Status:
-✅ Robô executado com sucesso
+✔ Robô executado com sucesso
+✔ Envio automático funcionando
+✔ GitHub Actions operacional
 
-Este e-mail foi enviado automaticamente pelo GitHub Actions.
+Este e-mail foi enviado automaticamente.
 """
 
-# ==================================================
+# =========================================================
 # MONTAGEM DO E-MAIL
-# ==================================================
-mensagem = MIMEMultipart()
-mensagem["From"] = EMAIL_USER
-mensagem["To"] = EMAIL_TO
-mensagem["Subject"] = assunto
-mensagem.attach(MIMEText(corpo, "plain"))
+# =========================================================
+msg = MIMEMultipart()
+msg["From"] = EMAIL_USER
+msg["To"] = EMAIL_TO
+msg["Subject"] = assunto
+msg.attach(MIMEText(corpo, "plain"))
 
-# ==================================================
-# ENVIO VIA GMAIL (SMTP)
-# ==================================================
-with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-    servidor.starttls()
-    servidor.login(EMAIL_USER, EMAIL_APP_PASSWORD)
-    servidor.send_message(mensagem)
+# =========================================================
+# ENVIO VIA SMTP GMAIL
+# =========================================================
+try:
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_APP_PASSWORD)
+        server.send_message(msg)
 
-print("✅ E-mail enviado com sucesso")
+    print("✅ E-mail enviado com sucesso.")
+
+except Exception as e:
+    print("❌ Erro ao enviar e-mail:")
+    print(e)
+    raise
