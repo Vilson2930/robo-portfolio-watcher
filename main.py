@@ -1,68 +1,64 @@
-# main.py
-# Observador de Portfólio – NÃO operacional
-# Executa leitura macro + ativos e imprime orientação
-
+import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-def macro_dashboard(macro_output):
-    score = macro_output["macro_score"]
+# ===============================
+# CONFIGURAÇÕES DE EMAIL
+# ===============================
+EMAIL_REMETENTE = "vilsonjosepereirapinto@gmail.com"
+EMAIL_DESTINO = "vilsonpinto@escola.pr.gov.br"
 
-    if score >= 60:
-        state = "BOM"
-        guidance = "Ambiente favorável a risco"
-    elif score >= 40:
-        state = "NEUTRO"
-        guidance = "Ambiente misto / cautela"
-    else:
-        state = "RUIM"
-        guidance = "Ambiente defensivo"
+# ⚠️ USE APENAS SENHA DE APP DO GMAIL (16 caracteres, sem espaços)
+SENHA_APP = "COLE_AQUI_SUA_SENHA_DE_APP"
 
-    return {
-        "macro_score": score,
-        "macro_state": state,
-        "guidance": guidance
-    }
+# ===============================
+# AGUARDA 5 MINUTOS
+# ===============================
+print("⏳ Teste iniciado. Aguardando 5 minutos para envio do e-mail...")
+time.sleep(300)  # 300 segundos = 5 minutos
 
-def portfolio_watcher(asset, macro_score, asset_score, weight):
-    if macro_score >= 60 and asset_score >= 60:
-        action = "MANTER / AUMENTAR LEVEMENTE"
-    elif asset_score < 60:
-        action = "REDUZIR EXPOSIÇÃO"
-    else:
-        action = "MANTER"
+# ===============================
+# CONTEÚDO DO RELATÓRIO (TESTE)
+# ===============================
+agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    return {
-        "ativo": asset,
-        "macro_score": macro_score,
-        "score_ativo": asset_score,
-        "peso": weight,
-        "orientacao": action
-    }
+mensagem = f"""
+RELATÓRIO DE TESTE – PORTFOLIO WATCHER
 
-# ===== EXECUÇÃO =====
-macro_output = {"macro_score": 70}
-macro = macro_dashboard(macro_output)
+Horário de envio: {agora}
 
-portfolio = [
-    portfolio_watcher("SP500", macro["macro_score"], 70, 0.35),
-    portfolio_watcher("EUROPA", macro["macro_score"], 70, 0.25),
-    portfolio_watcher("OURO", macro["macro_score"], 58, 0.15),
-]
+Este é um EMAIL DE TESTE.
+Se você recebeu esta mensagem, o envio automático está FUNCIONANDO corretamente.
 
-print("==== MACRO ====")
-print(macro)
+Próximo passo:
+✔️ Substituir este texto pelo relatório real
+✔️ Agendar envio diário automático
+"""
 
-print("\n==== PORTFÓLIO ====")
-for p in portfolio:
-    print(p)
+# ===============================
+# MONTAGEM DO EMAIL
+# ===============================
+msg = MIMEMultipart()
+msg["From"] = EMAIL_REMETENTE
+msg["To"] = EMAIL_DESTINO
+msg["Subject"] = "📊 TESTE – Relatório automático (5 minutos)"
 
-print("\nExecutado em:", datetime.utcnow())
-if __name__ == "__main__":
-    macro_output = {"macro_score": 70}
+msg.attach(MIMEText(mensagem, "plain"))
 
-    macro_res = macro_dashboard(macro_output)
+# ===============================
+# ENVIO DO EMAIL
+# ===============================
+try:
+    servidor = smtplib.SMTP("smtp.gmail.com", 587)
+    servidor.starttls()
+    servidor.login(EMAIL_REMETENTE, SENHA_APP)
+    servidor.send_message(msg)
+    servidor.quit()
 
-    print("===== MACRO DASHBOARD =====")
-    print(f"Macro score : {macro_res['macro_score']}")
-    print(f"Macro state : {macro_res['macro_state']}")
-    print(f"Orientação  : {macro_res['guidance']}")
+    print("✅ Email enviado com sucesso!")
+
+except Exception as erro:
+    print("❌ ERRO AO ENVIAR EMAIL")
+    print(erro)
