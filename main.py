@@ -1,72 +1,80 @@
+import os
 import time
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# ===============================
-# EMAIL SETTINGS
-# ===============================
-EMAIL_SENDER = "vilsonjosepereirapinto@gmail.com"
-EMAIL_RECEIVER = "vilsonjosepereirapinto@gmail.com"
-
-# Gmail APP PASSWORD (16 characters)
-APP_PASSWORD = ""
-
-# ===============================
-# BRAZIL TIMEZONE (BRT = UTC-3)
-# ===============================
+# =====================================================
+# CONFIGURAÇÃO DE FUSO HORÁRIO (BRASIL - BRT = UTC-3)
+# =====================================================
 BRT = timezone(timedelta(hours=-3))
 
-now_brt = datetime.now(BRT)
+# =====================================================
+# HORA ALVO DE ENVIO (14:30 BRT)
+# =====================================================
+HORA_ENVIO = 14
+MINUTO_ENVIO = 30
 
-target_time = now_brt.replace(
-    hour=13,
-    minute=35,
+# =====================================================
+# DADOS DE E-MAIL (VINDOS DOS SECRETS DO GITHUB)
+# =====================================================
+EMAIL_SENDER = os.getenv("EMAIL_USER")
+EMAIL_RECEIVER = os.getenv("EMAIL_TO")
+APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
+
+# Validação básica
+if not EMAIL_SENDER or not EMAIL_RECEIVER or not APP_PASSWORD:
+    raise ValueError("Secrets de e-mail não configurados corretamente.")
+
+# =====================================================
+# CALCULA QUANTO TEMPO ESPERAR ATÉ 14:30 BRT
+# =====================================================
+agora = datetime.now(BRT)
+horario_envio = agora.replace(
+    hour=HORA_ENVIO,
+    minute=MINUTO_ENVIO,
     second=0,
     microsecond=0
 )
 
-# If current time already passed 13:35, send immediately
-if target_time > now_brt:
-    wait_seconds = (target_time - now_brt).total_seconds()
-    print(f"Waiting until 13:25 BRT ({int(wait_seconds)} seconds)...")
-    time.sleep(wait_seconds)
-else:
-    print("Target time already passed. Sending immediately.")
+# Se já passou das 14:30 hoje, envia no próximo dia
+if agora >= horario_envio:
+    horario_envio += timedelta(days=1)
 
-# ===============================
-# EMAIL CONTENT
-# ===============================
-send_time = datetime.now(BRT).strftime("%d/%m/%Y %H:%M:%S")
+segundos_espera = (horario_envio - agora).total_seconds()
 
-body = f"""
-TEST REPORT – PORTFOLIO WATCHER
+print(f"Aguardando até {horario_envio.strftime('%d/%m/%Y %H:%M:%S')} BRT")
+print(f"Tempo de espera: {int(segundos_espera)} segundos")
 
-Scheduled time: 13:25 BRT
-Actual send time: {send_time}
+time.sleep(segundos_espera)
 
-If you received this email, automatic delivery is WORKING.
+# =====================================================
+# MONTA O E-MAIL
+# =====================================================
+mensagem = MIMEMultipart()
+mensagem["From"] = EMAIL_SENDER
+mensagem["To"] = EMAIL_RECEIVER
+mensagem["Subject"] = "Relatório automático - Observador de Portfólio"
+
+corpo = f"""
+Relatório enviado automaticamente.
+
+Horário de envio (BRT):
+{datetime.now(BRT).strftime('%d/%m/%Y %H:%M:%S')}
+
+Status:
+Sistema funcionando corretamente.
 """
 
-msg = MIMEMultipart()
-msg["From"] = EMAIL_SENDER
-msg["To"] = EMAIL_RECEIVER
-msg["Subject"] = "TEST – Scheduled Email 13:35 BRT"
+mensagem.attach(MIMEText(corpo, "plain"))
 
-msg.attach(MIMEText(body, "plain"))
+# =====================================================
+# ENVIO DO E-MAIL (SMTP GMAIL)
+# =====================================================
+with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
+    servidor.starttls()
+    servidor.login(EMAIL_SENDER, APP_PASSWORD)
+    servidor.send_message(mensagem)
 
-# ===============================
-# SEND EMAIL
-# ===============================
-try:
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.starttls()
-    server.login(EMAIL_SENDER, APP_PASSWORD)
-    server.send_message(msg)
-    server.quit()
-    print("Email sent successfully.")
-
-except Exception as error:
-    print("ERROR sending email:")
-    print(error)
+print("E-mail enviado com sucesso.")
