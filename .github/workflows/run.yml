@@ -1,0 +1,22 @@
+name: Portfolio Watcher
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # roda a cada 6 horas
+  workflow_dispatch:       # permite rodar manualmente
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Executar observador de portfólio
+        run: python main.py
