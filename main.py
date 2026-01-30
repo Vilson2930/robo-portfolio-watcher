@@ -11,7 +11,7 @@ EMAIL_SENDER = "vilsonjosepereirapinto@gmail.com"
 EMAIL_RECEIVER = "vilsonjosepereirapinto@gmail.com"
 
 # Gmail APP PASSWORD (16 characters)
-APP_PASSWORD = "adrsqtbyeeqigdxm"
+APP_PASSWORD = ""
 
 # ===============================
 # BRAZIL TIMEZONE (BRT = UTC-3)
