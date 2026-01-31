@@ -1,54 +1,131 @@
-import os
-import smtplib
-from datetime import datetime, timedelta, timezone
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
-# ==================================================
-# FUSO HORÁRIO DO BRASIL (BRT = UTC-3)
-# ==================================================
-BRT = timezone(timedelta(hours=-3))
-agora = datetime.now(BRT)
-
-# ==================================================
-# EXECUTA SOMENTE APÓS 21:00 BRT
-# ==================================================
-if agora.hour < 21:
-    print("Ainda não são 21h no horário do Brasil. Encerrando execução.")
-    exit(0)
-
-# ==================================================
-# SECRETS DO GITHUB
-# ==================================================
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
-EMAIL_TO = os.getenv("EMAIL_TO")
-
-if not EMAIL_USER or not EMAIL_APP_PASSWORD or not EMAIL_TO:
-    raise ValueError("Secrets de e-mail não configurados corretamente.")
-
-# ==================================================
-# CONTEÚDO DO RELATÓRIO
-# ==================================================
-assunto = "Relatório Diário do Robô de Portfólio"
-corpo = f"""
-Relatório gerado com sucesso.
-
-Data/Hora (Brasil): {agora.strftime('%d/%m/%Y %H:%M')}
+"""
+ROBO GLOBAL – DIRECIONAL + OPERACIONAL + BALANCEAMENTO
+Versão: 1.0
+Execução: Cloud / GitHub Actions / Colab
 """
 
-# ==================================================
-# ENVIO DE E-MAIL
-# ==================================================
-mensagem = MIMEMultipart()
-mensagem["From"] = EMAIL_USER
-mensagem["To"] = EMAIL_TO
-mensagem["Subject"] = assunto
-mensagem.attach(MIMEText(corpo, "plain"))
+# ============================================================
+# 1. MACRO ENGINE (DIRECIONAL DOMINANTE)
+# ============================================================
 
-with smtplib.SMTP("smtp.gmail.com", 587) as servidor:
-    servidor.starttls()
-    servidor.login(EMAIL_USER, EMAIL_APP_PASSWORD)
-    servidor.send_message(mensagem)
+def macro_engine(macro_score: float) -> dict:
+    if macro_score >= 65:
+        state = "BOM"
+        bias = "RISCO"
+    elif macro_score >= 45:
+        state = "NEUTRO"
+        bias = "MISTO"
+    else:
+        state = "RUIM"
+        bias = "DEFENSIVO"
 
-print("Relatório enviado com sucesso.")
+    return {
+        "macro_score": macro_score,
+        "macro_state": state,
+        "macro_bias": bias
+    }
+
+
+# ============================================================
+# 2. MARKET ENGINE (CONFIRMAÇÃO)
+# ============================================================
+
+MARKETS = {
+    "SP500":  {"internal_score": 68},
+    "EUROPA": {"internal_score": 62},
+    "OURO":   {"internal_score": 35}
+}
+
+def market_engine(market: str, macro: dict) -> dict:
+    internal_score = MARKETS[market]["internal_score"]
+
+    final_score = (
+        macro["macro_score"] * 0.7 +
+        internal_score * 0.3
+    )
+
+    if final_score >= 60:
+        decision = "COMPRA"
+    elif final_score >= 45:
+        decision = "MANTER"
+    else:
+        decision = "REDUZIR"
+
+    return {
+        "market": market,
+        "internal_score": internal_score,
+        "final_score": round(final_score, 1),
+        "decision": decision
+    }
+
+
+# ============================================================
+# 3. BALANCEAMENTO DE PORTFÓLIO
+# ============================================================
+
+TARGET_WEIGHTS = {
+    "SP500": 0.40,
+    "EUROPA": 0.30,
+    "OURO": 0.20
+}
+
+def rebalance_portfolio(market_result: dict, current_weight: float) -> dict:
+    decision = market_result["decision"]
+    target = TARGET_WEIGHTS[market_result["market"]]
+
+    if decision == "COMPRA":
+        new_weight = min(current_weight + 0.05, target)
+        action = "AUMENTAR"
+    elif decision == "REDUZIR":
+        new_weight = max(current_weight - 0.05, 0)
+        action = "REDUZIR"
+    else:
+        new_weight = current_weight
+        action = "MANTER"
+
+    return {
+        "market": market_result["market"],
+        "decision": decision,
+        "current_weight": current_weight,
+        "target_weight": target,
+        "new_weight": round(new_weight, 2),
+        "action": action
+    }
+
+
+# ============================================================
+# 4. EXECUÇÃO FINAL (OUTPUT DO ROBO)
+# ============================================================
+
+if __name__ == "__main__":
+
+    # INPUT MACRO (vem do notebook direcional)
+    macro_score = 70
+
+    # PESOS ATUAIS DO PORTFÓLIO
+    portfolio = {
+        "SP500": 0.35,
+        "EUROPA": 0.25,
+        "OURO": 0.25
+    }
+
+    print("\n========== MACRO ==========")
+    macro = macro_engine(macro_score)
+    print(macro)
+
+    print("\n====== DECISÃO POR MERCADO ======")
+    market_results = {}
+    for m in MARKETS:
+        res = market_engine(m, macro)
+        market_results[m] = res
+        print(res)
+
+    print("\n====== BALANCEAMENTO ======")
+    for m in portfolio:
+        reb = rebalance_portfolio(
+            market_results[m],
+            portfolio[m]
+        )
+        print(reb)
+
+    print("\nROBO EXECUTADO COM SUCESSO.")
