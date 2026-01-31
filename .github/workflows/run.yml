@@ -2,7 +2,7 @@ name: Portfolio Watcher
 
 on:
   schedule:
-    - cron: "0 */5 * * *"   # roda a cada 5 horas
+    - cron: "0 */4 * * *"   # roda a cada 4 horas
   workflow_dispatch:       # permite rodar manualmente
 
 jobs:
