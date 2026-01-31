@@ -1,8 +1,11 @@
 """
-ROBO GLOBAL – DIRECIONAL + OPERACIONAL + BALANCEAMENTO
+ROBO GLOBAL - DIRECTIONAL + OPERATIONAL + BALANCEAMENTO
 Versão: 1.0
 Execução: Cloud / GitHub Actions / Colab
 """
+
+# === IMPORTA MOTOR OPERACIONAL (AUXILIAR) ===
+from auxiliar import motor_operacional
 
 # ============================================================
 # 1. MACRO ENGINE (DIRECIONAL DOMINANTE)
@@ -57,6 +60,20 @@ def market_engine(market: str, macro: dict) -> dict:
         "final_score": round(final_score, 1),
         "decision": decision
     }
+# ==================================================
+# 2. MOTOR OPERACIONAL (AUXILIAR)
+# ==================================================
+
+def executar_operacional(resultado_mercado: dict, peso_atual: float) -> dict:
+    """
+    Converte a decisão estratégica em ação operacional
+    usando o motor auxiliar (auxiliar.py)
+    """
+    return motor_operacional(
+        mercado=resultado_mercado["market"],
+        score_final=resultado_mercado["final_score"],
+        peso_atual=peso_atual
+    )
 
 
 # ============================================================
